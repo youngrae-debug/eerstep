@@ -6,31 +6,34 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useCopy } from "@/hooks/use-locale";
 import { useWealthStore } from "@/hooks/use-wealth-store";
+import { formatInputAmount, toBaseCurrencyAmount } from "@/lib/utils";
 
 export default function DiagnosisPage() {
   const router = useRouter();
+  const { copy, locale } = useCopy();
   const { state, updateFinancials } = useWealthStore();
   const [form, setForm] = useState({
-    assets: state.assets.toString(),
-    liabilities: state.liabilities.toString(),
-    income: state.income.toString(),
-    expenses: state.expenses.toString()
+    assets: formatInputAmount(state.assets, locale),
+    liabilities: formatInputAmount(state.liabilities, locale),
+    income: formatInputAmount(state.income, locale),
+    expenses: formatInputAmount(state.expenses, locale)
   });
 
   useEffect(() => {
     setForm({
-      assets: state.assets.toString(),
-      liabilities: state.liabilities.toString(),
-      income: state.income.toString(),
-      expenses: state.expenses.toString()
+      assets: formatInputAmount(state.assets, locale),
+      liabilities: formatInputAmount(state.liabilities, locale),
+      income: formatInputAmount(state.income, locale),
+      expenses: formatInputAmount(state.expenses, locale)
     });
-  }, [state.assets, state.liabilities, state.income, state.expenses]);
+  }, [locale, state.assets, state.liabilities, state.income, state.expenses]);
 
   const parseAmount = (value: string) => {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return 0;
-    return Math.max(parsed, 0);
+    return Math.max(Math.round(toBaseCurrencyAmount(parsed, locale)), 0);
   };
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -47,16 +50,30 @@ export default function DiagnosisPage() {
   return (
     <div className="page-grid">
       <Card className="mx-auto w-full max-w-xl">
-        <p className="text-xs uppercase tracking-wide text-secondaryText">Diagnosis</p>
-        <h1 className="mt-2 text-3xl font-semibold">Where are you now?</h1>
-        <p className="mt-2 text-sm text-secondaryText">Enter four numbers. We&apos;ll return your level, strategy, and next actions.</p>
+        <p className="text-xs uppercase tracking-wide text-secondaryText">{copy.diagnosis.eyebrow}</p>
+        <h1 className="mt-2 text-3xl font-semibold">{copy.diagnosis.title}</h1>
+        <p className="mt-2 text-sm text-secondaryText">{copy.diagnosis.description}</p>
+
+        <Card className="mt-6 space-y-3 border-white/5 bg-white/[0.03]">
+          <p className="text-sm font-semibold text-primaryText">{copy.diagnosis.guideTitle}</p>
+          <div className="space-y-2 text-sm leading-6 text-secondaryText">
+            <p>{copy.diagnosis.assetsHelp}</p>
+            <p>{copy.diagnosis.liabilitiesHelp}</p>
+            <p>{copy.diagnosis.incomeHelp}</p>
+            <p>{copy.diagnosis.expensesHelp}</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-secondaryText">
+            <p>{copy.diagnosis.currencyNote}</p>
+            <p className="mt-1">{copy.diagnosis.reassurance}</p>
+          </div>
+        </Card>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           {[
-            ["assets", "Total assets (KRW)"],
-            ["liabilities", "Total liabilities (KRW)"],
-            ["income", "Monthly income (KRW)"],
-            ["expenses", "Monthly expenses (KRW)"]
+            ["assets", copy.diagnosis.assets],
+            ["liabilities", copy.diagnosis.liabilities],
+            ["income", copy.diagnosis.income],
+            ["expenses", copy.diagnosis.expenses]
           ].map(([key, label]) => (
             <div className="space-y-2" key={key}>
               <Label htmlFor={key}>{label}</Label>
@@ -71,7 +88,7 @@ export default function DiagnosisPage() {
             </div>
           ))}
           <Button type="submit" className="w-full" size="lg">
-            Analyze my level
+            {copy.diagnosis.submit}
           </Button>
         </form>
       </Card>

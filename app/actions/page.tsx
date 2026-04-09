@@ -5,22 +5,24 @@ import { ActionChecklist } from "@/components/sections/action-checklist";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useCopy } from "@/hooks/use-locale";
 import { useWealthStore } from "@/hooks/use-wealth-store";
 
 export default function ActionsPage() {
+  const { copy } = useCopy();
   const { addAction } = useWealthStore();
   const [title, setTitle] = useState("");
 
   return (
     <div className="page-grid">
       <Card>
-        <p className="text-xs uppercase tracking-wide text-secondaryText">Action plan</p>
-        <h1 className="mt-2 text-3xl font-semibold">What should I do next?</h1>
-        <p className="mt-2 text-sm text-secondaryText">Add one action that directly moves you toward your next wealth level.</p>
+        <p className="text-xs uppercase tracking-wide text-secondaryText">{copy.actionsPage.eyebrow}</p>
+        <h1 className="mt-2 text-3xl font-semibold">{copy.actionsPage.title}</h1>
+        <p className="mt-2 text-sm text-secondaryText">{copy.actionsPage.description}</p>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           <Input
-            placeholder="Add a high-leverage action"
+            placeholder={copy.actionsPage.placeholder}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
@@ -30,7 +32,7 @@ export default function ActionsPage() {
               setTitle("");
             }}
           >
-            Add action
+            {copy.actionsPage.submit}
           </Button>
         </div>
       </Card>

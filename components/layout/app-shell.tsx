@@ -3,19 +3,22 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCopy } from "@/hooks/use-locale";
+import { LOCALE_LABELS, LOCALES } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/", label: "Home" },
-  { href: "/diagnosis", label: "Diagnosis" },
-  { href: "/result", label: "Result" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/strategy", label: "Strategy" },
-  { href: "/actions", label: "Actions" }
-];
+import { Button } from "@/components/ui/button";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { copy, locale, setLocale } = useCopy();
+  const navItems = [
+    { href: "/", label: copy.nav.home },
+    { href: "/diagnosis", label: copy.nav.diagnosis },
+    { href: "/result", label: copy.nav.result },
+    { href: "/dashboard", label: copy.nav.dashboard },
+    { href: "/strategy", label: copy.nav.strategy },
+    { href: "/actions", label: copy.nav.actions }
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -24,7 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link href="/" className="text-sm font-semibold tracking-[0.2em] text-accent">
             EERSTEP
           </Link>
-          <div className="flex gap-1 overflow-x-auto">
+          <div className="flex items-center gap-2 overflow-x-auto">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -37,6 +40,24 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {item.label}
               </Link>
             ))}
+            <div className="flex shrink-0 items-center rounded-xl border border-white/10 bg-white/5 p-1">
+              <span className="sr-only">{copy.language.label}</span>
+              {LOCALES.map((value) => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-8 rounded-lg px-2.5 text-xs",
+                    locale === value && "bg-white/10 text-primaryText hover:bg-white/10"
+                  )}
+                  onClick={() => setLocale(value)}
+                >
+                  {LOCALE_LABELS[value]}
+                </Button>
+              ))}
+            </div>
           </div>
         </nav>
       </header>

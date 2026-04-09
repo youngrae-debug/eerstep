@@ -8,7 +8,14 @@ import {
   useState,
   type ReactNode
 } from "react";
-import { generateActions, getWealthLevel, type WealthLevel } from "@/lib/wealth";
+import { DEFAULT_LOCALE } from "@/lib/i18n";
+import {
+  generateActionDefinitions,
+  getGeneratedActionKey,
+  getGeneratedActionTitle,
+  getWealthLevel,
+  type WealthLevel
+} from "@/lib/wealth";
 
 type ActionSource = "generated" | "custom";
 
@@ -17,6 +24,7 @@ type ActionItem = {
   title: string;
   completed: boolean;
   source: ActionSource;
+  actionKey?: string;
 };
 
 type WealthState = {
@@ -25,7 +33,7 @@ type WealthState = {
   income: number;
   expenses: number;
   netWorth: number;
-  level: number;
+  level: WealthLevel;
   actions: ActionItem[];
 };
 
@@ -46,11 +54,12 @@ function createActionId(prefix: string, index?: number) {
 }
 
 function createGeneratedActions(level: WealthLevel, prefix = "generated") {
-  return generateActions(level).map((title, index) => ({
+  return generateActionDefinitions(level, DEFAULT_LOCALE).map(({ actionKey, title }, index) => ({
     id: createActionId(prefix, index),
     title,
     completed: false,
-    source: "generated" as const
+    source: "generated" as const,
+    actionKey
   }));
 }
 
@@ -72,16 +81,22 @@ function toSafeMoney(value: unknown): number {
   return Math.max(parseFiniteNumber(value), 0);
 }
 
-function toSafeActionItem(value: unknown, index: number, generatedTitles: Set<string>): ActionItem | null {
+function toSafeActionItem(value: unknown, index: number, level: WealthLevel): ActionItem | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Partial<ActionItem>;
   if (typeof raw.title !== "string" || !raw.title.trim()) return null;
 
   const title = raw.title.trim();
+  const providedActionKey =
+    typeof raw.actionKey === "string" && getGeneratedActionTitle(raw.actionKey, DEFAULT_LOCALE)
+      ? raw.actionKey
+      : undefined;
+  const inferredActionKey = getGeneratedActionKey(level, title);
+  const actionKey = providedActionKey ?? inferredActionKey;
   const source: ActionSource =
     raw.source === "generated" || raw.source === "custom"
       ? raw.source
-      : generatedTitles.has(title)
+      : actionKey
         ? "generated"
         : "custom";
 
@@ -89,7 +104,8 @@ function toSafeActionItem(value: unknown, index: number, generatedTitles: Set<st
     id: typeof raw.id === "string" && raw.id.trim() ? raw.id : createActionId("restored", index),
     title,
     completed: Boolean(raw.completed),
-    source
+    source,
+    actionKey: source === "generated" ? actionKey : undefined
   };
 }
 
@@ -103,11 +119,10 @@ function sanitizeStoredState(value: unknown): WealthState {
   const expenses = toSafeMoney(raw.expenses);
   const netWorth = assets - liabilities;
   const level = getWealthLevel(netWorth) as WealthLevel;
-  const generatedTitles = new Set(generateActions(level));
 
   const restoredActions = Array.isArray(raw.actions)
     ? raw.actions
-        .map((action, index) => toSafeActionItem(action, index, generatedTitles))
+        .map((action, index) => toSafeActionItem(action, index, level))
         .filter((action): action is ActionItem => action !== null)
     : [];
   const generatedActions = restoredActions.filter((action) => action.source === "generated");
