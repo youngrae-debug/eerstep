@@ -18,6 +18,14 @@ npm run lint:strict
 npm run typecheck
 ```
 
+## Build output
+
+```bash
+npm run build
+```
+
+`next.config.ts` uses static export, so production web assets are generated into `out/`. `capacitor.config.ts` also points `webDir` to `out`, which means the folder is a generated build artifact for packaging and local native sync, not source to maintain by hand.
+
 ## Core pages
 
 - `/` Landing

@@ -10,10 +10,13 @@ import {
 } from "react";
 import { generateActions, getWealthLevel, type WealthLevel } from "@/lib/wealth";
 
+type ActionSource = "generated" | "custom";
+
 type ActionItem = {
   id: string;
   title: string;
   completed: boolean;
+  source: ActionSource;
 };
 
 type WealthState = {
@@ -35,6 +38,22 @@ type WealthContextValue = {
 
 const STORAGE_KEY = "eerstep-store";
 
+function createActionId(prefix: string, index?: number) {
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    `${prefix}-${Date.now()}${index === undefined ? "" : `-${index}`}-${Math.random().toString(16).slice(2)}`
+  );
+}
+
+function createGeneratedActions(level: WealthLevel, prefix = "generated") {
+  return generateActions(level).map((title, index) => ({
+    id: createActionId(prefix, index),
+    title,
+    completed: false,
+    source: "generated" as const
+  }));
+}
+
 const defaultState: WealthState = {
   assets: 50_000_000,
   liabilities: 20_000_000,
@@ -42,7 +61,7 @@ const defaultState: WealthState = {
   expenses: 3_200_000,
   netWorth: 30_000_000,
   level: 2,
-  actions: generateActions(2).map((title, index) => ({ id: `seed-${index}`, title, completed: false }))
+  actions: createGeneratedActions(2, "seed")
 };
 
 function parseFiniteNumber(value: unknown, fallback = 0): number {
@@ -53,18 +72,24 @@ function toSafeMoney(value: unknown): number {
   return Math.max(parseFiniteNumber(value), 0);
 }
 
-function toSafeActionItem(value: unknown, index: number): ActionItem | null {
+function toSafeActionItem(value: unknown, index: number, generatedTitles: Set<string>): ActionItem | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Partial<ActionItem>;
   if (typeof raw.title !== "string" || !raw.title.trim()) return null;
 
+  const title = raw.title.trim();
+  const source: ActionSource =
+    raw.source === "generated" || raw.source === "custom"
+      ? raw.source
+      : generatedTitles.has(title)
+        ? "generated"
+        : "custom";
+
   return {
-    id:
-      typeof raw.id === "string" && raw.id.trim()
-        ? raw.id
-        : globalThis.crypto?.randomUUID?.() ?? `restored-${Date.now()}-${index}`,
-    title: raw.title.trim(),
-    completed: Boolean(raw.completed)
+    id: typeof raw.id === "string" && raw.id.trim() ? raw.id : createActionId("restored", index),
+    title,
+    completed: Boolean(raw.completed),
+    source
   };
 }
 
@@ -78,12 +103,15 @@ function sanitizeStoredState(value: unknown): WealthState {
   const expenses = toSafeMoney(raw.expenses);
   const netWorth = assets - liabilities;
   const level = getWealthLevel(netWorth) as WealthLevel;
+  const generatedTitles = new Set(generateActions(level));
 
   const restoredActions = Array.isArray(raw.actions)
     ? raw.actions
-        .map((action, index) => toSafeActionItem(action, index))
+        .map((action, index) => toSafeActionItem(action, index, generatedTitles))
         .filter((action): action is ActionItem => action !== null)
     : [];
+  const generatedActions = restoredActions.filter((action) => action.source === "generated");
+  const customActions = restoredActions.filter((action) => action.source === "custom");
 
   return {
     assets,
@@ -94,8 +122,8 @@ function sanitizeStoredState(value: unknown): WealthState {
     level,
     actions:
       restoredActions.length > 0
-        ? restoredActions
-        : generateActions(level).map((title, index) => ({ id: `seed-${index}`, title, completed: false }))
+        ? [...generatedActions, ...customActions]
+        : createGeneratedActions(level, "seed")
   };
 }
 
@@ -133,7 +161,17 @@ export function WealthProvider({ children }: { children: ReactNode }) {
           expenses,
           netWorth,
           level,
-          actions: generateActions(level).map((title, index) => ({ id: `${Date.now()}-${index}`, title, completed: false }))
+          actions: [
+            ...(() => {
+              if (prev.level === level) {
+                const preservedGenerated = prev.actions.filter((action) => action.source === "generated");
+                return preservedGenerated.length > 0 ? preservedGenerated : createGeneratedActions(level);
+              }
+
+              return createGeneratedActions(level, `level-${level}`);
+            })(),
+            ...prev.actions.filter((action) => action.source === "custom")
+          ]
         }));
       },
       addAction: (title) => {
@@ -143,9 +181,10 @@ export function WealthProvider({ children }: { children: ReactNode }) {
           actions: [
             ...prev.actions,
             {
-              id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+              id: createActionId("custom"),
               title: title.trim(),
-              completed: false
+              completed: false,
+              source: "custom"
             }
           ]
         }));

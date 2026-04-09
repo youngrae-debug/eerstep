@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,15 @@ export default function DiagnosisPage() {
     income: state.income.toString(),
     expenses: state.expenses.toString()
   });
+
+  useEffect(() => {
+    setForm({
+      assets: state.assets.toString(),
+      liabilities: state.liabilities.toString(),
+      income: state.income.toString(),
+      expenses: state.expenses.toString()
+    });
+  }, [state.assets, state.liabilities, state.income, state.expenses]);
 
   const parseAmount = (value: string) => {
     const parsed = Number(value);
