@@ -9,6 +9,15 @@ npm install
 npm run dev
 ```
 
+## Validation scripts
+
+```bash
+npm run lint
+npm run lint:fix
+npm run lint:strict
+npm run typecheck
+```
+
 ## Core pages
 
 - `/` Landing

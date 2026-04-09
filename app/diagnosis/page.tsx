@@ -18,13 +18,19 @@ export default function DiagnosisPage() {
     expenses: state.expenses.toString()
   });
 
+  const parseAmount = (value: string) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return 0;
+    return Math.max(parsed, 0);
+  };
+
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     updateFinancials({
-      assets: Number(form.assets || 0),
-      liabilities: Number(form.liabilities || 0),
-      income: Number(form.income || 0),
-      expenses: Number(form.expenses || 0)
+      assets: parseAmount(form.assets),
+      liabilities: parseAmount(form.liabilities),
+      income: parseAmount(form.income),
+      expenses: parseAmount(form.expenses)
     });
     router.push("/result");
   };

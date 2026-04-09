@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode
 } from "react";
-import { generateActions, getWealthLevel } from "@/lib/wealth";
+import { generateActions, getWealthLevel, type WealthLevel } from "@/lib/wealth";
 
 type ActionItem = {
   id: string;
@@ -45,6 +45,60 @@ const defaultState: WealthState = {
   actions: generateActions(2).map((title, index) => ({ id: `seed-${index}`, title, completed: false }))
 };
 
+function parseFiniteNumber(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function toSafeMoney(value: unknown): number {
+  return Math.max(parseFiniteNumber(value), 0);
+}
+
+function toSafeActionItem(value: unknown, index: number): ActionItem | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Partial<ActionItem>;
+  if (typeof raw.title !== "string" || !raw.title.trim()) return null;
+
+  return {
+    id:
+      typeof raw.id === "string" && raw.id.trim()
+        ? raw.id
+        : globalThis.crypto?.randomUUID?.() ?? `restored-${Date.now()}-${index}`,
+    title: raw.title.trim(),
+    completed: Boolean(raw.completed)
+  };
+}
+
+function sanitizeStoredState(value: unknown): WealthState {
+  if (!value || typeof value !== "object") return defaultState;
+
+  const raw = value as Partial<WealthState>;
+  const assets = toSafeMoney(raw.assets);
+  const liabilities = toSafeMoney(raw.liabilities);
+  const income = toSafeMoney(raw.income);
+  const expenses = toSafeMoney(raw.expenses);
+  const netWorth = assets - liabilities;
+  const level = getWealthLevel(netWorth) as WealthLevel;
+
+  const restoredActions = Array.isArray(raw.actions)
+    ? raw.actions
+        .map((action, index) => toSafeActionItem(action, index))
+        .filter((action): action is ActionItem => action !== null)
+    : [];
+
+  return {
+    assets,
+    liabilities,
+    income,
+    expenses,
+    netWorth,
+    level,
+    actions:
+      restoredActions.length > 0
+        ? restoredActions
+        : generateActions(level).map((title, index) => ({ id: `seed-${index}`, title, completed: false }))
+  };
+}
+
 const WealthContext = createContext<WealthContextValue | null>(null);
 
 export function WealthProvider({ children }: { children: ReactNode }) {
@@ -54,8 +108,7 @@ export function WealthProvider({ children }: { children: ReactNode }) {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       try {
-        const parsed = JSON.parse(raw) as WealthState;
-        setState(parsed);
+        setState(sanitizeStoredState(JSON.parse(raw)));
       } catch {
         setState(defaultState);
       }
