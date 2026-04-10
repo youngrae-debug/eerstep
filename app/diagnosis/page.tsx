@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useCopy } from "@/hooks/use-locale";
 import { useWealthStore } from "@/hooks/use-wealth-store";
 import { formatInputAmount, toBaseCurrencyAmount } from "@/lib/utils";
+import type { Bottleneck } from "@/lib/wealth";
 
 export default function DiagnosisPage() {
   const router = useRouter();
@@ -18,7 +19,8 @@ export default function DiagnosisPage() {
     assets: formatInputAmount(state.assets, locale),
     liabilities: formatInputAmount(state.liabilities, locale),
     income: formatInputAmount(state.income, locale),
-    expenses: formatInputAmount(state.expenses, locale)
+    expenses: formatInputAmount(state.expenses, locale),
+    bottleneck: state.bottleneck
   });
 
   useEffect(() => {
@@ -26,9 +28,10 @@ export default function DiagnosisPage() {
       assets: formatInputAmount(state.assets, locale),
       liabilities: formatInputAmount(state.liabilities, locale),
       income: formatInputAmount(state.income, locale),
-      expenses: formatInputAmount(state.expenses, locale)
+      expenses: formatInputAmount(state.expenses, locale),
+      bottleneck: state.bottleneck
     });
-  }, [locale, state.assets, state.liabilities, state.income, state.expenses]);
+  }, [locale, state.assets, state.liabilities, state.income, state.expenses, state.bottleneck]);
 
   const parseAmount = (value: string) => {
     const parsed = Number(value);
@@ -42,7 +45,8 @@ export default function DiagnosisPage() {
       assets: parseAmount(form.assets),
       liabilities: parseAmount(form.liabilities),
       income: parseAmount(form.income),
-      expenses: parseAmount(form.expenses)
+      expenses: parseAmount(form.expenses),
+      bottleneck: form.bottleneck
     });
     router.push("/result");
   };
@@ -87,6 +91,44 @@ export default function DiagnosisPage() {
               />
             </div>
           ))}
+
+          <fieldset className="space-y-2">
+            <p className="text-sm font-semibold text-primaryText">{copy.diagnosis.bottleneckTitle}</p>
+            <p className="text-xs text-secondaryText">{copy.diagnosis.bottleneckDescription}</p>
+            <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label={copy.diagnosis.bottleneckTitle}>
+              {([
+                ["income", copy.diagnosis.bottleneckIncome],
+                ["spending", copy.diagnosis.bottleneckSpending],
+                ["debt", copy.diagnosis.bottleneckDebt],
+                ["investing", copy.diagnosis.bottleneckInvesting],
+                ["strategy", copy.diagnosis.bottleneckStrategy],
+                ["execution", copy.diagnosis.bottleneckExecution],
+                ["sales", copy.diagnosis.bottleneckSales]
+              ] as [Bottleneck, string][]).map(([value, label]) => {
+                const checked = form.bottleneck === value;
+                return (
+                  <label
+                    key={value}
+                    className={
+                      checked
+                        ? "cursor-pointer rounded-xl border border-accent bg-accent/10 px-3 py-2 text-left text-sm text-primaryText"
+                        : "cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-sm text-secondaryText"
+                    }
+                  >
+                    <input
+                      type="radio"
+                      name="bottleneck"
+                      value={value}
+                      checked={checked}
+                      onChange={() => setForm((prev) => ({ ...prev, bottleneck: value }))}
+                      className="sr-only"
+                    />
+                    {label}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
           <Button type="submit" className="w-full" size="lg">
             {copy.diagnosis.submit}
           </Button>

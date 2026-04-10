@@ -10,6 +10,7 @@ import {
 } from "react";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import {
+  type Bottleneck,
   generateActionDefinitions,
   getGeneratedActionKey,
   getGeneratedActionTitle,
@@ -34,12 +35,19 @@ type WealthState = {
   expenses: number;
   netWorth: number;
   level: WealthLevel;
+  bottleneck: Bottleneck;
   actions: ActionItem[];
 };
 
 type WealthContextValue = {
   state: WealthState;
-  updateFinancials: (payload: { assets: number; liabilities: number; income: number; expenses: number }) => void;
+  updateFinancials: (payload: {
+    assets: number;
+    liabilities: number;
+    income: number;
+    expenses: number;
+    bottleneck?: Bottleneck;
+  }) => void;
   addAction: (title: string) => void;
   toggleAction: (id: string) => void;
 };
@@ -70,6 +78,7 @@ const defaultState: WealthState = {
   expenses: 3_200_000,
   netWorth: 30_000_000,
   level: 2,
+  bottleneck: "strategy",
   actions: createGeneratedActions(2, "seed")
 };
 
@@ -128,6 +137,17 @@ function sanitizeStoredState(value: unknown): WealthState {
   const generatedActions = restoredActions.filter((action) => action.source === "generated");
   const customActions = restoredActions.filter((action) => action.source === "custom");
 
+  const bottleneck: Bottleneck =
+    raw.bottleneck === "income" ||
+    raw.bottleneck === "spending" ||
+    raw.bottleneck === "debt" ||
+    raw.bottleneck === "investing" ||
+    raw.bottleneck === "strategy" ||
+    raw.bottleneck === "execution" ||
+    raw.bottleneck === "sales"
+      ? raw.bottleneck
+      : "strategy";
+
   return {
     assets,
     liabilities,
@@ -135,6 +155,7 @@ function sanitizeStoredState(value: unknown): WealthState {
     expenses,
     netWorth,
     level,
+    bottleneck,
     actions:
       restoredActions.length > 0
         ? [...generatedActions, ...customActions]
@@ -165,7 +186,7 @@ export function WealthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<WealthContextValue>(
     () => ({
       state,
-      updateFinancials: ({ assets, liabilities, income, expenses }) => {
+      updateFinancials: ({ assets, liabilities, income, expenses, bottleneck }) => {
         const netWorth = assets - liabilities;
         const level = getWealthLevel(netWorth);
         setState((prev) => ({
@@ -176,6 +197,7 @@ export function WealthProvider({ children }: { children: ReactNode }) {
           expenses,
           netWorth,
           level,
+          bottleneck: bottleneck ?? prev.bottleneck,
           actions: [
             ...(() => {
               if (prev.level === level) {
