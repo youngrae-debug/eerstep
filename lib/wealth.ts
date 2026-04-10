@@ -9,6 +9,8 @@ export type Bottleneck =
   | "strategy"
   | "execution"
   | "sales";
+export type TimeCapacity = "low" | "mid" | "high";
+export type SalesConfidence = "low" | "mid" | "high";
 
 export const LEVEL_MINIMUMS = [
   0,
@@ -608,13 +610,75 @@ export function getBottleneckLabel(bottleneck: Bottleneck, locale: Locale) {
   return BOTTLENECK_LABELS[bottleneck][locale];
 }
 
-export function getNextBestAction(level: WealthLevel, bottleneck: Bottleneck, locale: Locale) {
+const TIME_CAPACITY_COACHING: Record<TimeCapacity, LocalizedText> = {
+  low: {
+    ko: "이번 주는 20분 단위의 최소 실행으로 유지하세요.",
+    en: "Keep this week to minimum 20-minute execution blocks."
+  },
+  mid: {
+    ko: "주 3~5시간 범위에서 반복 실행을 만드세요.",
+    en: "Build repeatable execution within a 3–5 hour weekly window."
+  },
+  high: {
+    ko: "주 6시간 이상 투입 가능하니 한 단계 확장하세요.",
+    en: "You have 6+ hours this week, so scale this one level up."
+  }
+};
+
+const SALES_CONFIDENCE_COACHING: Record<SalesConfidence, LocalizedText> = {
+  low: {
+    ko: "세일즈 자신감이 낮다면 제안보다 질문부터 시작하세요.",
+    en: "If sales confidence is low, start with questions before pitching."
+  },
+  mid: {
+    ko: "진단 질문 후 간단한 제안을 붙여보세요.",
+    en: "After diagnostic questions, attach a simple offer."
+  },
+  high: {
+    ko: "프리미엄 오퍼 테스트까지 확장해보세요.",
+    en: "Expand to testing a premium offer."
+  }
+};
+
+export function getNextBestAction(
+  level: WealthLevel,
+  bottleneck: Bottleneck,
+  timeCapacity: TimeCapacity,
+  salesConfidence: SalesConfidence,
+  locale: Locale
+) {
   const rule = NEXT_ACTION_RULES[level][bottleneck];
+  const secondary = [...rule.secondary.map((item) => item[locale])];
+  if (timeCapacity === "low") {
+    secondary.push(
+      locale === "ko"
+        ? "오늘 20분 안에 끝낼 수 있는 최소 행동 1개만 완료하기"
+        : "Complete exactly one minimum action you can finish in 20 minutes today"
+    );
+  }
+  if (timeCapacity === "high") {
+    secondary.push(
+      locale === "ko"
+        ? "동일 행동을 주 2회 이상 반복해 시스템으로 고정하기"
+        : "Repeat this action 2+ times this week to systemize it"
+    );
+  }
+  if (salesConfidence === "low") {
+    secondary.push(
+      locale === "ko"
+        ? "제안 전에 고객 진단 질문 3개를 먼저 작성하기"
+        : "Write 3 customer diagnostic questions before making an offer"
+    );
+  }
 
   return {
     primary: rule.primary[locale],
-    secondary: rule.secondary.map((item) => item[locale]),
-    avoid: rule.avoid.map((item) => item[locale])
+    secondary: secondary.slice(0, 5),
+    avoid: rule.avoid.map((item) => item[locale]),
+    coaching: {
+      time: TIME_CAPACITY_COACHING[timeCapacity][locale],
+      sales: SALES_CONFIDENCE_COACHING[salesConfidence][locale]
+    }
   };
 }
 

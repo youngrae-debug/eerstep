@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCopy } from "@/hooks/use-locale";
 import { useWealthStore } from "@/hooks/use-wealth-store";
+import { trackEvent } from "@/lib/analytics";
 import { formatInputAmount, toBaseCurrencyAmount } from "@/lib/utils";
 import type { Bottleneck } from "@/lib/wealth";
 
@@ -55,6 +56,15 @@ export default function DiagnosisPage() {
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     updateFinancials({
+      assets: parseAmount(form.assets),
+      liabilities: parseAmount(form.liabilities),
+      income: parseAmount(form.income),
+      expenses: parseAmount(form.expenses),
+      bottleneck: form.bottleneck,
+      timeCapacity: form.timeCapacity,
+      salesConfidence: form.salesConfidence
+    });
+    trackEvent("diagnosis_submitted", {
       assets: parseAmount(form.assets),
       liabilities: parseAmount(form.liabilities),
       income: parseAmount(form.income),

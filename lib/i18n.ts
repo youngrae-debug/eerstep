@@ -30,7 +30,9 @@ export const APP_COPY = {
       result: "결과",
       dashboard: "대시보드",
       strategy: "전략",
-      actions: "액션"
+      actions: "액션",
+      validation: "검증",
+      metrics: "지표"
     },
     landing: {
       eyebrow: "전략 기반 자산 성장",
@@ -102,7 +104,36 @@ export const APP_COPY = {
       sprintStart: "7일 스프린트 시작",
       recommendationHistoryTitle: "최근 추천 기록",
       recommendedActions: "추천 액션",
+      validationCta: "검증 랩 시작",
       cta: "대시보드로 이동"
+    },
+    validationPage: {
+      eyebrow: "검증 랩",
+      title: "만들기 전에 먼저 검증하세요",
+      description: "문제, 고객, 채널, 반응을 빠르게 기록해 실행 가설을 검증합니다.",
+      problem: "해결할 문제 1문장",
+      customer: "타깃 고객 1명",
+      channel: "검증 채널",
+      attempts: "실행 횟수",
+      responses: "반응 횟수",
+      note: "메모",
+      submit: "검증 기록 저장"
+    },
+    metricsPage: {
+      eyebrow: "제품 지표",
+      title: "현재 실행 퍼널",
+      description: "로컬 이벤트를 기반으로 핵심 전환 지표를 확인합니다.",
+      noData: "아직 이벤트가 없습니다. 진단부터 진행해보세요.",
+      diagnosisSubmitted: "진단 제출",
+      resultViewed: "결과 조회",
+      sprintStarted: "스프린트 시작",
+      validationStarted: "검증 시작",
+      validationSaved: "검증 저장",
+      firstResponse: "첫 반응 기록",
+      resultConversion: "결과 전환율",
+      sprintConversion: "스프린트 시작률",
+      validationSaveRate: "검증 저장률",
+      firstResponseRate: "첫 반응률"
     },
     actionsPage: {
       eyebrow: "액션 플랜",
@@ -143,7 +174,9 @@ export const APP_COPY = {
       result: "Result",
       dashboard: "Dashboard",
       strategy: "Strategy",
-      actions: "Actions"
+      actions: "Actions",
+      validation: "Validation",
+      metrics: "Metrics"
     },
     landing: {
       eyebrow: "Strategy-based wealth progression",
@@ -215,7 +248,36 @@ export const APP_COPY = {
       sprintStart: "Start 7-day sprint",
       recommendationHistoryTitle: "Recent recommendation history",
       recommendedActions: "Recommended actions",
+      validationCta: "Start validation lab",
       cta: "Go to Dashboard"
+    },
+    validationPage: {
+      eyebrow: "Validation lab",
+      title: "Validate before you build",
+      description: "Quickly record problem, customer, channel, and responses to test your execution hypothesis.",
+      problem: "One-sentence problem",
+      customer: "One target customer",
+      channel: "Validation channel",
+      attempts: "Attempt count",
+      responses: "Response count",
+      note: "Notes",
+      submit: "Save validation run"
+    },
+    metricsPage: {
+      eyebrow: "Product metrics",
+      title: "Current execution funnel",
+      description: "Review key conversion metrics based on local events.",
+      noData: "No events yet. Start with diagnosis first.",
+      diagnosisSubmitted: "Diagnosis submitted",
+      resultViewed: "Result viewed",
+      sprintStarted: "Sprint started",
+      validationStarted: "Validation started",
+      validationSaved: "Validation saved",
+      firstResponse: "First response recorded",
+      resultConversion: "Result conversion rate",
+      sprintConversion: "Sprint start rate",
+      validationSaveRate: "Validation save rate",
+      firstResponseRate: "First response rate"
     },
     actionsPage: {
       eyebrow: "Action plan",

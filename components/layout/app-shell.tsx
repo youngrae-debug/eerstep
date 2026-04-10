@@ -17,7 +17,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     { href: "/result", label: copy.nav.result },
     { href: "/dashboard", label: copy.nav.dashboard },
     { href: "/strategy", label: copy.nav.strategy },
-    { href: "/actions", label: copy.nav.actions }
+    { href: "/actions", label: copy.nav.actions },
+    { href: "/validation", label: copy.nav.validation },
+    { href: "/metrics", label: copy.nav.metrics }
   ];
 
   return (

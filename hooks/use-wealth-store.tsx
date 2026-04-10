@@ -15,6 +15,8 @@ import {
   getNextBestAction,
   getGeneratedActionKey,
   getGeneratedActionTitle,
+  type SalesConfidence,
+  type TimeCapacity,
   getWealthLevel,
   type WealthLevel
 } from "@/lib/wealth";
@@ -37,8 +39,8 @@ type WealthState = {
   netWorth: number;
   level: WealthLevel;
   bottleneck: Bottleneck;
-  timeCapacity: "low" | "mid" | "high";
-  salesConfidence: "low" | "mid" | "high";
+  timeCapacity: TimeCapacity;
+  salesConfidence: SalesConfidence;
   actions: ActionItem[];
   recommendationHistory: {
     id: string;
@@ -46,6 +48,16 @@ type WealthState = {
     level: WealthLevel;
     bottleneck: Bottleneck;
     primaryAction: string;
+  }[];
+  validationRuns: {
+    id: string;
+    createdAt: string;
+    problem: string;
+    customer: string;
+    channel: string;
+    attempts: number;
+    responses: number;
+    note: string;
   }[];
 };
 
@@ -57,10 +69,18 @@ type WealthContextValue = {
     income: number;
     expenses: number;
     bottleneck?: Bottleneck;
-    timeCapacity?: "low" | "mid" | "high";
-    salesConfidence?: "low" | "mid" | "high";
+    timeCapacity?: TimeCapacity;
+    salesConfidence?: SalesConfidence;
   }) => void;
   addAction: (title: string) => void;
+  addValidationRun: (payload: {
+    problem: string;
+    customer: string;
+    channel: string;
+    attempts: number;
+    responses: number;
+    note: string;
+  }) => void;
   toggleAction: (id: string) => void;
 };
 
@@ -94,7 +114,8 @@ const defaultState: WealthState = {
   timeCapacity: "mid",
   salesConfidence: "low",
   actions: createGeneratedActions(2, "seed"),
-  recommendationHistory: []
+  recommendationHistory: [],
+  validationRuns: []
 };
 
 function parseFiniteNumber(value: unknown, fallback = 0): number {
@@ -186,6 +207,25 @@ function sanitizeStoredState(value: unknown): WealthState {
         )
         .slice(0, 30)
     : [];
+  const validationRuns = Array.isArray(raw.validationRuns)
+    ? raw.validationRuns
+        .filter(
+          (entry): entry is WealthState["validationRuns"][number] =>
+            Boolean(
+              entry &&
+              typeof entry === "object" &&
+              typeof (entry as { id?: unknown }).id === "string" &&
+              typeof (entry as { createdAt?: unknown }).createdAt === "string" &&
+              typeof (entry as { problem?: unknown }).problem === "string" &&
+              typeof (entry as { customer?: unknown }).customer === "string" &&
+              typeof (entry as { channel?: unknown }).channel === "string" &&
+              typeof (entry as { attempts?: unknown }).attempts === "number" &&
+              typeof (entry as { responses?: unknown }).responses === "number" &&
+              typeof (entry as { note?: unknown }).note === "string"
+            )
+        )
+        .slice(0, 50)
+    : [];
 
   return {
     assets,
@@ -201,7 +241,8 @@ function sanitizeStoredState(value: unknown): WealthState {
       restoredActions.length > 0
         ? [...generatedActions, ...customActions]
         : createGeneratedActions(level, "seed"),
-    recommendationHistory
+    recommendationHistory,
+    validationRuns
   };
 }
 
@@ -235,7 +276,13 @@ export function WealthProvider({ children }: { children: ReactNode }) {
           ...prev,
           ...(() => {
             const nextBottleneck = bottleneck ?? prev.bottleneck;
-            const primaryAction = getNextBestAction(level, nextBottleneck, DEFAULT_LOCALE).primary;
+            const primaryAction = getNextBestAction(
+              level,
+              nextBottleneck,
+              timeCapacity ?? prev.timeCapacity,
+              salesConfidence ?? prev.salesConfidence,
+              DEFAULT_LOCALE
+            ).primary;
 
             return {
               bottleneck: nextBottleneck,
@@ -285,6 +332,24 @@ export function WealthProvider({ children }: { children: ReactNode }) {
               source: "custom"
             }
           ]
+        }));
+      },
+      addValidationRun: ({ problem, customer, channel, attempts, responses, note }) => {
+        setState((prev) => ({
+          ...prev,
+          validationRuns: [
+            {
+              id: createActionId("validation"),
+              createdAt: new Date().toISOString(),
+              problem: problem.trim(),
+              customer: customer.trim(),
+              channel: channel.trim(),
+              attempts: Math.max(Math.round(attempts), 0),
+              responses: Math.max(Math.round(responses), 0),
+              note: note.trim()
+            },
+            ...prev.validationRuns
+          ].slice(0, 50)
         }));
       },
       toggleAction: (id) => {

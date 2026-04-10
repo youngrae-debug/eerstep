@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-locale";
 import { useWealthStore } from "@/hooks/use-wealth-store";
+import { trackEvent } from "@/lib/analytics";
 import { formatCurrency } from "@/lib/utils";
 import {
   getActionDisplayTitle,
@@ -20,8 +22,22 @@ export default function ResultPage() {
   const { state } = useWealthStore();
   const strategy = getStrategy(state.level, locale);
   const target = getNextLevelTarget(state.netWorth);
-  const nextAction = getNextBestAction(state.level, state.bottleneck, locale);
+  const nextAction = getNextBestAction(
+    state.level,
+    state.bottleneck,
+    state.timeCapacity,
+    state.salesConfidence,
+    locale
+  );
   const sprintPlan = getSevenDaySprint(nextAction.primary, locale);
+
+  useEffect(() => {
+    trackEvent("result_viewed", {
+      level: state.level,
+      bottleneck: state.bottleneck,
+      netWorth: state.netWorth
+    });
+  }, [state.level, state.bottleneck, state.netWorth]);
 
   return (
     <div className="page-grid">
@@ -49,6 +65,8 @@ export default function ResultPage() {
                 <li key={item}>• {item}</li>
               ))}
             </ul>
+            <p className="mt-4 text-xs text-secondaryText">{nextAction.coaching.time}</p>
+            <p className="mt-1 text-xs text-secondaryText">{nextAction.coaching.sales}</p>
           </Card>
           <Card>
             <p className="text-sm font-semibold text-accent">{copy.result.strategyTitle}</p>
@@ -98,12 +116,48 @@ export default function ResultPage() {
             ))}
           </ul>
           <Link href="/actions" className="mt-4 inline-block">
-            <Button size="sm">{copy.result.sprintStart}</Button>
+            <Button
+              size="sm"
+              onClick={() =>
+                trackEvent("sprint_started", {
+                  level: state.level,
+                  bottleneck: state.bottleneck,
+                  action: nextAction.primary
+                })
+              }
+            >
+              {copy.result.sprintStart}
+            </Button>
+          </Link>
+          <Link href="/validation" className="ml-2 inline-block">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                trackEvent("validation_started", {
+                  level: state.level,
+                  bottleneck: state.bottleneck,
+                  source: "result_cta"
+                })
+              }
+            >
+              {copy.result.validationCta}
+            </Button>
           </Link>
         </Card>
 
         <Link href="/dashboard">
-          <Button size="lg">{copy.result.cta}</Button>
+          <Button
+            size="lg"
+            onClick={() =>
+              trackEvent("dashboard_cta_clicked", {
+                level: state.level,
+                bottleneck: state.bottleneck
+              })
+            }
+          >
+            {copy.result.cta}
+          </Button>
         </Link>
       </Card>
     </div>

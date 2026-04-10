@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-locale";
 import { useWealthStore } from "@/hooks/use-wealth-store";
+import { trackEvent } from "@/lib/analytics";
 import { getActionDisplayTitle } from "@/lib/wealth";
 
 export function ActionChecklist() {
@@ -16,7 +17,18 @@ export function ActionChecklist() {
       <ul className="mt-4 space-y-3">
         {state.actions.map((action) => (
           <li key={action.id} className="flex items-start gap-3">
-            <Checkbox checked={action.completed} onCheckedChange={() => toggleAction(action.id)} />
+            <Checkbox
+              checked={action.completed}
+              onCheckedChange={() => {
+                toggleAction(action.id);
+                trackEvent("action_toggled", {
+                  actionId: action.id,
+                  actionTitle: action.title,
+                  completed: !action.completed,
+                  source: action.source
+                });
+              }}
+            />
             <span className={action.completed ? "text-sm text-secondaryText line-through" : "text-sm text-primaryText"}>
               {getActionDisplayTitle(action, locale)}
             </span>
