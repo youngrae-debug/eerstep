@@ -1,6 +1,16 @@
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 
 export type WealthLevel = 1 | 2 | 3 | 4 | 5 | 6;
+export type Bottleneck =
+  | "income"
+  | "spending"
+  | "debt"
+  | "investing"
+  | "strategy"
+  | "execution"
+  | "sales";
+export type TimeCapacity = "low" | "mid" | "high";
+export type SalesConfidence = "low" | "mid" | "high";
 
 export const LEVEL_MINIMUMS = [
   0,
@@ -12,6 +22,189 @@ export const LEVEL_MINIMUMS = [
 ] as const;
 
 type LocalizedText = Record<Locale, string>;
+
+const BOTTLENECK_LABELS: Record<Bottleneck, LocalizedText> = {
+  income: { ko: "소득 부족", en: "Low income" },
+  spending: { ko: "지출 통제 실패", en: "Spending control issues" },
+  debt: { ko: "부채 압박", en: "Debt pressure" },
+  investing: { ko: "투자 혼란", en: "Investment confusion" },
+  strategy: { ko: "전략 부재", en: "Lack of strategy" },
+  execution: { ko: "실행력 부족", en: "Weak execution" },
+  sales: { ko: "세일즈 약함", en: "Weak sales" }
+};
+
+type NextActionRule = {
+  primary: LocalizedText;
+  secondary: LocalizedText[];
+  avoid: LocalizedText[];
+};
+
+type NextActionRuleSet = Record<Bottleneck, NextActionRule>;
+
+const BASE_NEXT_ACTION_RULES: NextActionRuleSet = {
+  income: {
+    primary: {
+      ko: "이번 주 안정적인 추가 소득원 1개 확보하기",
+      en: "Secure one stable additional income source this week"
+    },
+    secondary: [
+      { ko: "2시간 안에 가능한 소규모 서비스 1개 정의", en: "Define one small service you can deliver in 2 hours" },
+      { ko: "지인 3명에게 서비스 테스트 제안 보내기", en: "Send a service test offer to 3 people" }
+    ],
+    avoid: [
+      { ko: "앱부터 만들기", en: "Building an app first" },
+      { ko: "새로운 장비 구매", en: "Buying new equipment" },
+      { ko: "가격 없는 상담", en: "Unpriced consultations" }
+    ]
+  },
+  spending: {
+    primary: {
+      ko: "고정비 2개 즉시 축소 또는 해지하기",
+      en: "Reduce or cancel 2 fixed expenses immediately"
+    },
+    secondary: [
+      { ko: "구독/보험/통신비 30분 점검", en: "Audit subscriptions/insurance/telecom for 30 minutes" },
+      { ko: "지출 한도 계좌를 별도로 분리", en: "Split a dedicated spending-cap account" }
+    ],
+    avoid: [
+      { ko: "무계획 할인 쇼핑", en: "Unplanned discount shopping" },
+      { ko: "현금흐름 없는 투자", en: "Investments without cash-flow control" },
+      { ko: "소액 절약 집착", en: "Obsessing over tiny savings" }
+    ]
+  },
+  debt: {
+    primary: {
+      ko: "고금리 부채 상환 우선순위 1순위 확정하기",
+      en: "Set top-priority repayment for high-interest debt"
+    },
+    secondary: [
+      { ko: "이자율 기준 상환 순서표 작성", en: "Create a repayment order by interest rate" },
+      { ko: "월 상환 자동이체 설정", en: "Set monthly auto-repayment" }
+    ],
+    avoid: [
+      { ko: "신규 할부", en: "New installments" },
+      { ko: "리볼빙 유지", en: "Keeping revolving balances" },
+      { ko: "단기 고위험 투자", en: "Short-term high-risk bets" }
+    ]
+  },
+  investing: {
+    primary: {
+      ko: "비상금 기준 충족 전 고위험 투자 중단하기",
+      en: "Pause high-risk investing until emergency fund target is met"
+    },
+    secondary: [
+      { ko: "투자 원칙 3줄로 정의", en: "Define investing rules in 3 lines" },
+      { ko: "자동이체 날짜 고정", en: "Fix recurring transfer date" }
+    ],
+    avoid: [
+      { ko: "테마주/단타", en: "Theme/short-term trading" },
+      { ko: "감정 매매", en: "Emotion-driven trades" },
+      { ko: "정보 과소비", en: "Over-consuming market content" }
+    ]
+  },
+  strategy: {
+    primary: {
+      ko: "7일 검증 미션 시작하기",
+      en: "Start a 7-day validation mission"
+    },
+    secondary: [
+      { ko: "해결할 문제 1문장 작성", en: "Write one sentence for the problem you solve" },
+      { ko: "타깃 고객 1명 정의", en: "Define one target customer" }
+    ],
+    avoid: [
+      { ko: "아이디어만 수집하기", en: "Collecting ideas only" },
+      { ko: "앱/브랜딩 선행 제작", en: "Building app/branding first" },
+      { ko: "실행 없는 학습", en: "Learning without execution" }
+    ]
+  },
+  execution: {
+    primary: {
+      ko: "오늘 20분 실행 블록 1개 캘린더에 고정",
+      en: "Lock one 20-minute execution block in your calendar today"
+    },
+    secondary: [
+      { ko: "이번 주 핵심 행동 1개만 선택", en: "Choose only one core action for this week" },
+      { ko: "완료 증거 1개 남기기", en: "Leave one completion proof" }
+    ],
+    avoid: [
+      { ko: "할 일 10개 나열", en: "Listing 10 to-dos" },
+      { ko: "준비만 반복", en: "Looping preparation only" },
+      { ko: "마감 없는 목표", en: "Goals without deadlines" }
+    ]
+  },
+  sales: {
+    primary: {
+      ko: "고객 진단 질문 5개 먼저 만들기",
+      en: "Create 5 diagnostic customer questions first"
+    },
+    secondary: [
+      { ko: "오퍼 문장 1개 작성", en: "Write one offer sentence" },
+      { ko: "잠재고객 5명에게 진단 질문 발송", en: "Send diagnostic questions to 5 prospects" }
+    ],
+    avoid: [
+      { ko: "기능만 설명하기", en: "Explaining features only" },
+      { ko: "할인부터 제시", en: "Leading with discounts" },
+      { ko: "무타깃 대량 발송", en: "Untargeted mass outreach" }
+    ]
+  }
+};
+
+const NEXT_ACTION_RULES: Record<
+  WealthLevel,
+  NextActionRuleSet
+> = {
+  1: BASE_NEXT_ACTION_RULES,
+  2: {
+    ...BASE_NEXT_ACTION_RULES,
+    income: {
+      ...BASE_NEXT_ACTION_RULES.income,
+      primary: {
+        ko: "이번 주 수익화 가능한 서비스 오퍼 1개 만들기",
+        en: "Create one monetizable service offer this week"
+      }
+    }
+  },
+  3: {
+    ...BASE_NEXT_ACTION_RULES,
+    strategy: {
+      ...BASE_NEXT_ACTION_RULES.strategy,
+      primary: {
+        ko: "14일 검증 실험으로 고객 반응 10건 수집하기",
+        en: "Run a 14-day validation sprint to collect 10 customer responses"
+      }
+    }
+  },
+  4: {
+    ...BASE_NEXT_ACTION_RULES,
+    execution: {
+      ...BASE_NEXT_ACTION_RULES.execution,
+      primary: {
+        ko: "운영 업무 1개 위임 또는 자동화하기",
+        en: "Delegate or automate one recurring operating task"
+      }
+    }
+  },
+  5: {
+    ...BASE_NEXT_ACTION_RULES,
+    sales: {
+      ...BASE_NEXT_ACTION_RULES.sales,
+      primary: {
+        ko: "프리미엄 고객용 오퍼 1개 재설계하기",
+        en: "Redesign one offer for premium customers"
+      }
+    }
+  },
+  6: {
+    ...BASE_NEXT_ACTION_RULES,
+    strategy: {
+      ...BASE_NEXT_ACTION_RULES.strategy,
+      primary: {
+        ko: "전략적 파트너십 1건 실행 계획 수립하기",
+        en: "Draft an execution plan for one strategic partnership"
+      }
+    }
+  }
+};
 
 export type StrategySet = {
   headline: string;
@@ -411,4 +604,104 @@ export function progressToNextLevel(netWorth: number) {
   const max = LEVEL_MINIMUMS[level];
   const span = max - min;
   return Math.min(Math.max((netWorth - min) / span, 0), 1);
+}
+
+export function getBottleneckLabel(bottleneck: Bottleneck, locale: Locale) {
+  return BOTTLENECK_LABELS[bottleneck][locale];
+}
+
+const TIME_CAPACITY_COACHING: Record<TimeCapacity, LocalizedText> = {
+  low: {
+    ko: "이번 주는 20분 단위의 최소 실행으로 유지하세요.",
+    en: "Keep this week to minimum 20-minute execution blocks."
+  },
+  mid: {
+    ko: "주 3~5시간 범위에서 반복 실행을 만드세요.",
+    en: "Build repeatable execution within a 3–5 hour weekly window."
+  },
+  high: {
+    ko: "주 6시간 이상 투입 가능하니 한 단계 확장하세요.",
+    en: "You have 6+ hours this week, so scale this one level up."
+  }
+};
+
+const SALES_CONFIDENCE_COACHING: Record<SalesConfidence, LocalizedText> = {
+  low: {
+    ko: "세일즈 자신감이 낮다면 제안보다 질문부터 시작하세요.",
+    en: "If sales confidence is low, start with questions before pitching."
+  },
+  mid: {
+    ko: "진단 질문 후 간단한 제안을 붙여보세요.",
+    en: "After diagnostic questions, attach a simple offer."
+  },
+  high: {
+    ko: "프리미엄 오퍼 테스트까지 확장해보세요.",
+    en: "Expand to testing a premium offer."
+  }
+};
+
+export function getNextBestAction(
+  level: WealthLevel,
+  bottleneck: Bottleneck,
+  timeCapacity: TimeCapacity,
+  salesConfidence: SalesConfidence,
+  locale: Locale
+) {
+  const rule = NEXT_ACTION_RULES[level][bottleneck];
+  const secondary = [...rule.secondary.map((item) => item[locale])];
+  if (timeCapacity === "low") {
+    secondary.push(
+      locale === "ko"
+        ? "오늘 20분 안에 끝낼 수 있는 최소 행동 1개만 완료하기"
+        : "Complete exactly one minimum action you can finish in 20 minutes today"
+    );
+  }
+  if (timeCapacity === "high") {
+    secondary.push(
+      locale === "ko"
+        ? "동일 행동을 주 2회 이상 반복해 시스템으로 고정하기"
+        : "Repeat this action 2+ times this week to systemize it"
+    );
+  }
+  if (salesConfidence === "low") {
+    secondary.push(
+      locale === "ko"
+        ? "제안 전에 고객 진단 질문 3개를 먼저 작성하기"
+        : "Write 3 customer diagnostic questions before making an offer"
+    );
+  }
+
+  return {
+    primary: rule.primary[locale],
+    secondary: secondary.slice(0, 5),
+    avoid: rule.avoid.map((item) => item[locale]),
+    coaching: {
+      time: TIME_CAPACITY_COACHING[timeCapacity][locale],
+      sales: SALES_CONFIDENCE_COACHING[salesConfidence][locale]
+    }
+  };
+}
+
+export function getSevenDaySprint(primaryAction: string, locale: Locale) {
+  if (locale === "ko") {
+    return [
+      { day: "Day 1", focus: "셋업", task: `${primaryAction}를 위한 시작 조건 정리` },
+      { day: "Day 2", focus: "실행", task: "20분 실행 블록으로 첫 행동 완료" },
+      { day: "Day 3", focus: "실행", task: "같은 행동을 한 번 더 반복" },
+      { day: "Day 4", focus: "개선", task: "막힌 지점 1개 수정 후 재실행" },
+      { day: "Day 5", focus: "확장", task: "행동 범위를 1단계 확장" },
+      { day: "Day 6", focus: "증거", task: "실행 증거 1개 기록(텍스트/체크)" },
+      { day: "Day 7", focus: "리뷰", task: "다음 주 핵심 행동 1개 재설정" }
+    ];
+  }
+
+  return [
+    { day: "Day 1", focus: "Setup", task: `Define start conditions for: ${primaryAction}` },
+    { day: "Day 2", focus: "Execution", task: "Complete your first 20-minute execution block" },
+    { day: "Day 3", focus: "Execution", task: "Repeat the same action one more time" },
+    { day: "Day 4", focus: "Improve", task: "Fix one blocker and run again" },
+    { day: "Day 5", focus: "Scale", task: "Expand this action by one level" },
+    { day: "Day 6", focus: "Proof", task: "Record one piece of execution proof" },
+    { day: "Day 7", focus: "Review", task: "Set one core action for next week" }
+  ];
 }
