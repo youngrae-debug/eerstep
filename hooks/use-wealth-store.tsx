@@ -10,7 +10,9 @@ import {
 } from "react";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import {
+  type Bottleneck,
   generateActionDefinitions,
+  getNextBestAction,
   getGeneratedActionKey,
   getGeneratedActionTitle,
   getWealthLevel,
@@ -34,12 +36,30 @@ type WealthState = {
   expenses: number;
   netWorth: number;
   level: WealthLevel;
+  bottleneck: Bottleneck;
+  timeCapacity: "low" | "mid" | "high";
+  salesConfidence: "low" | "mid" | "high";
   actions: ActionItem[];
+  recommendationHistory: {
+    id: string;
+    createdAt: string;
+    level: WealthLevel;
+    bottleneck: Bottleneck;
+    primaryAction: string;
+  }[];
 };
 
 type WealthContextValue = {
   state: WealthState;
-  updateFinancials: (payload: { assets: number; liabilities: number; income: number; expenses: number }) => void;
+  updateFinancials: (payload: {
+    assets: number;
+    liabilities: number;
+    income: number;
+    expenses: number;
+    bottleneck?: Bottleneck;
+    timeCapacity?: "low" | "mid" | "high";
+    salesConfidence?: "low" | "mid" | "high";
+  }) => void;
   addAction: (title: string) => void;
   toggleAction: (id: string) => void;
 };
@@ -70,7 +90,11 @@ const defaultState: WealthState = {
   expenses: 3_200_000,
   netWorth: 30_000_000,
   level: 2,
-  actions: createGeneratedActions(2, "seed")
+  bottleneck: "strategy",
+  timeCapacity: "mid",
+  salesConfidence: "low",
+  actions: createGeneratedActions(2, "seed"),
+  recommendationHistory: []
 };
 
 function parseFiniteNumber(value: unknown, fallback = 0): number {
@@ -128,6 +152,41 @@ function sanitizeStoredState(value: unknown): WealthState {
   const generatedActions = restoredActions.filter((action) => action.source === "generated");
   const customActions = restoredActions.filter((action) => action.source === "custom");
 
+  const bottleneck: Bottleneck =
+    raw.bottleneck === "income" ||
+    raw.bottleneck === "spending" ||
+    raw.bottleneck === "debt" ||
+    raw.bottleneck === "investing" ||
+    raw.bottleneck === "strategy" ||
+    raw.bottleneck === "execution" ||
+    raw.bottleneck === "sales"
+      ? raw.bottleneck
+      : "strategy";
+  const timeCapacity =
+    raw.timeCapacity === "low" || raw.timeCapacity === "mid" || raw.timeCapacity === "high"
+      ? raw.timeCapacity
+      : "mid";
+  const salesConfidence =
+    raw.salesConfidence === "low" || raw.salesConfidence === "mid" || raw.salesConfidence === "high"
+      ? raw.salesConfidence
+      : "low";
+  const recommendationHistory = Array.isArray(raw.recommendationHistory)
+    ? raw.recommendationHistory
+        .filter(
+          (entry): entry is WealthState["recommendationHistory"][number] =>
+            Boolean(
+              entry &&
+              typeof entry === "object" &&
+              typeof (entry as { id?: unknown }).id === "string" &&
+              typeof (entry as { createdAt?: unknown }).createdAt === "string" &&
+              typeof (entry as { level?: unknown }).level === "number" &&
+              typeof (entry as { bottleneck?: unknown }).bottleneck === "string" &&
+              typeof (entry as { primaryAction?: unknown }).primaryAction === "string"
+            )
+        )
+        .slice(0, 30)
+    : [];
+
   return {
     assets,
     liabilities,
@@ -135,10 +194,14 @@ function sanitizeStoredState(value: unknown): WealthState {
     expenses,
     netWorth,
     level,
+    bottleneck,
+    timeCapacity,
+    salesConfidence,
     actions:
       restoredActions.length > 0
         ? [...generatedActions, ...customActions]
-        : createGeneratedActions(level, "seed")
+        : createGeneratedActions(level, "seed"),
+    recommendationHistory
   };
 }
 
@@ -165,17 +228,37 @@ export function WealthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<WealthContextValue>(
     () => ({
       state,
-      updateFinancials: ({ assets, liabilities, income, expenses }) => {
+      updateFinancials: ({ assets, liabilities, income, expenses, bottleneck, timeCapacity, salesConfidence }) => {
         const netWorth = assets - liabilities;
         const level = getWealthLevel(netWorth);
         setState((prev) => ({
           ...prev,
+          ...(() => {
+            const nextBottleneck = bottleneck ?? prev.bottleneck;
+            const primaryAction = getNextBestAction(level, nextBottleneck, DEFAULT_LOCALE).primary;
+
+            return {
+              bottleneck: nextBottleneck,
+              recommendationHistory: [
+                {
+                  id: createActionId("recommend"),
+                  createdAt: new Date().toISOString(),
+                  level,
+                  bottleneck: nextBottleneck,
+                  primaryAction
+                },
+                ...prev.recommendationHistory
+              ].slice(0, 30)
+            };
+          })(),
           assets,
           liabilities,
           income,
           expenses,
           netWorth,
           level,
+          timeCapacity: timeCapacity ?? prev.timeCapacity,
+          salesConfidence: salesConfidence ?? prev.salesConfidence,
           actions: [
             ...(() => {
               if (prev.level === level) {
