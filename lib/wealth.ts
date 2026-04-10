@@ -617,3 +617,27 @@ export function getNextBestAction(level: WealthLevel, bottleneck: Bottleneck, lo
     avoid: rule.avoid.map((item) => item[locale])
   };
 }
+
+export function getSevenDaySprint(primaryAction: string, locale: Locale) {
+  if (locale === "ko") {
+    return [
+      { day: "Day 1", focus: "셋업", task: `${primaryAction}를 위한 시작 조건 정리` },
+      { day: "Day 2", focus: "실행", task: "20분 실행 블록으로 첫 행동 완료" },
+      { day: "Day 3", focus: "실행", task: "같은 행동을 한 번 더 반복" },
+      { day: "Day 4", focus: "개선", task: "막힌 지점 1개 수정 후 재실행" },
+      { day: "Day 5", focus: "확장", task: "행동 범위를 1단계 확장" },
+      { day: "Day 6", focus: "증거", task: "실행 증거 1개 기록(텍스트/체크)" },
+      { day: "Day 7", focus: "리뷰", task: "다음 주 핵심 행동 1개 재설정" }
+    ];
+  }
+
+  return [
+    { day: "Day 1", focus: "Setup", task: `Define start conditions for: ${primaryAction}` },
+    { day: "Day 2", focus: "Execution", task: "Complete your first 20-minute execution block" },
+    { day: "Day 3", focus: "Execution", task: "Repeat the same action one more time" },
+    { day: "Day 4", focus: "Improve", task: "Fix one blocker and run again" },
+    { day: "Day 5", focus: "Scale", task: "Expand this action by one level" },
+    { day: "Day 6", focus: "Proof", task: "Record one piece of execution proof" },
+    { day: "Day 7", focus: "Review", task: "Set one core action for next week" }
+  ];
+}
